@@ -1,0 +1,169 @@
+\documentclass[12pt,fullpage, a4paper]{article}
+\usepackage[
+margin=1.5cm,
+includefoot,
+footskip=30pt,
+]{geometry}
+\usepackage[utf8]{inputenc}
+%\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{comment}
+\usepackage{lineno}
+\usepackage{url}
+
+\author{Benjamin Peter}
+\usepackage[style=authoryear,
+natbib=true,
+backend=biber,
+maxbibnames=10,
+maxcitenames=2,
+uniquename=false,
+uniquelist=false,
+isbn=false]{biblatex}
+\addbibresource{main.bib}
+%biblatex stuff
+\DeclareFieldFormat[article]{citetitle}{#1}
+\DeclareFieldFormat[article]{title}{#1} 
+\renewbibmacro{in:}{}
+\DeclareFieldFormat{pages}{#1}
+\renewcommand{\labelnamepunct}{\addcolon\space}
+\AtEveryBibitem{\clearlist{language}}
+\AtEveryBibitem{\clearfield{month}}
+\AtEveryCitekey{\clearfield{month}}
+\AtEveryBibitem{\ifentrytype{article}{
+		\clearfield{url}
+		\clearfield{urlyear}
+		\clearfield{language}}{}}
+\AtEveryBibitem{\ifentrytype{book}{
+		\clearfield{url}
+		\clearfield{urlyear}
+		\clearfield{language}}{}}
+
+\renewbibmacro*{volume+number+eid}{%
+	\printfield{volume}%
+	%  \setunit*{\adddot}% DELETED
+	\setunit*{\addnbspace}% NEW (optional); there's also \addnbthinspace
+	\printfield{number}%
+	\setunit{\addcomma\space}%
+	\printfield{eid}}
+\DeclareFieldFormat[article]{number}{\mkbibparens{#1}}
+
+
+\linenumbers
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+\newcommand{\normsq}[1]{\left\lVert#1\right\rVert^2}
+\newcommand{\MX}{\mathbf{X}} %uncentered data
+\newcommand{\MS}{\mathbf{S}} %source pops
+\newcommand{\MR}{\mathbf{R}} %reference data
+\newcommand{\MC}{\mathbf{C}} %centering
+\newcommand{\MY}{\mathbf{Y}} %centered data
+\newcommand{\MF}{\mathbf{F}_2} %F2-distance matrix
+\newcommand{\MFT}{\mathbf{F}_3} %F3-distance matrix
+\newcommand{\MP}{\mathbf{P}} % PCs
+\newcommand{\ML}{\mathbf{L}} % loadings
+\newcommand{\MK}{\mathbf{K}} % Kernel
+\newcommand{\MSINGULAR}{\mathbf{\Sigma}} % Singular values matrix
+\newcommand{\MEIGEN}{\mathbf{\Lambda}} % Eigenvalue matrix
+\newcommand{\MEAN}{\boldsymbol{\mu}} % Kernel
+\newcommand{\MALPHA}{\boldsymbol{\alpha}}
+\newcommand{\vectorproj}[2][]{\textit{proj}_{#1}#2}
+
+
+\title{Admixture / PCA notes}
+\begin{document}
+	\maketitle
+	\section{Introduction}
+	Isolated populations are expected to slowly diverge \citep{nielsen2001}. If this isolation persists, populations will eventually differ so much that they are no longer able to reproduce, resulting in the (allopatric) formation of new species. However, this process  of speciation usually takes millions of years, and so it is quite common that diverged population meet again, and produce offspring populations with both ancestries. One major revelation of the genomic reovlution for evolution has been that such admixture is quite common, and many phenotypically well-differentiated species occasionally interbreed.
+	
+	
+\section{Theory}
+\subsection{Gradients vs Admixture}
+
+
+\subsection{Known Source Populations}
+This is the simplest case. Let us assume we have data from $p$ SNPs from $n$ populations, so that $X_i$ is the $p$-dimensional vector with population allele frequencies in population $i$, and we could store all data in a matrix $\MX_{[n \times p]}$ where the subscript denotes the dimension, and $x_{ij}$ is the allele frequency of the $j$-th SNP in the $i$-th population.   
+
+
+\subsubsection{2-way admixture}
+Ignoring the effects of genetic drift, let us assume that population $X$ is the product of admixture between populations $S_1$ and $S_2$ then,
+\begin{equation}
+X = \alpha S_1 + (1-\alpha) S_2,
+\end{equation}
+so that the allele frequencies of the admixed population are a linear combination of the source populations. This scenario has a straightforward geometric interpretation: We can think of $S_1$, $S_2$ as vectors in an $p$-dimensional space, and $X$ will lie on the line between the two sources. 
+
+The LSQ-estimate of $\alpha$ is then
+
+\begin{align}
+\epsilon &=  \sum_i^p \left(\alpha s_{1i} + (1-\alpha) s_{2i} - x_{i}\right)^2\\
+&= \sum_i [x_{i}^2 + \alpha^2 s_{1i}^2 + (1-2\alpha + \alpha^2) s_{2i}^2 + 2\alpha(1-\alpha) s_{1i}s_{2i} - 2\alpha s_{1i}x_i - (1-\alpha)s_{2i}x_{i}]\\
+&=\alpha^2 \left( \sum_i [s_{1i}^2 + s_{2i}^2 - 2s_{1i}s_{2i}]\right) + \alpha \left(\sum_i[-2s_{2i}^2 - 2 s_{1i}x_{i} + 2 s_{1i}s_{2i} +  2 s_{2i}x_{i}]\right) + K\\
+\frac{d \epsilon}{d \alpha} &= 2\alpha \left(\sum_i[s_{1i}^2 +  s_{2i}^2 -  2s_{1i}s_{2i}]\right) - 2\sum_i[s_{2i}^2 + s_{1i}x_{i} - s_{1i}s_{2i} -  s_{2i}x_{i}] = 0 \\
+\alpha &= \frac{\sum_i[s_{2i}^2 +  s_{1i}s_{i} -  s_{1i}s_{2i} -   s_{2i}x_{i}]}
+{\sum_i[s_{1i}^2 +  s_{2i}^2 -  2s_{1i}s_{2i}]}\\
+&= \frac{ \sum_i(s_{1i} - s_{2i})(x_{i} - s_{2i})  }{\sum_i(s_{1i} - s_{2i})^2}\\
+&= \frac{\langle S_1 - S_2; X - S_2 \rangle} {\normsq{S_1 - S_2}}
+\end{align}
+which is the length of the projection of $X - S_2 $ onto $S_1- S_2$.
+
+
+Let us now assume $X$ is not sampled immediately, but rather we observe a later population $X_2$ Assuming no further gene flow happens between $X$ and $X_2$, then the drift should be orthogonal, i.e. 
+$$ \langle X_2 - X ; S_2 - S_1\rangle = 0$$
+and so this projection will still work.
+
+
+
+
+\subsubsection{Many pops}
+Likewise, for multiple sources,
+\begin{equation}
+X = \MALPHA \MS,
+\end{equation}
+where now $\MALPHA = (\alpha_1, \dots, \alpha_n)$ is the vector containing contributions from each population, subject to the constraints that $\alpha_i \geq 0$  and $\sum_i^n \alpha_i = 1$.
+
+\begin{align}
+\epsilon &=  \sum_i^p \left( \left(1 - \sum_{j>1}\alpha_j\right)s_{0i} + \sum_{j>1} \alpha_j s_{ji} - x_{i}\right)^2\\
+&= \sum_i^p \left( \sum_j \alpha_j (s_{ji}-s_{0i}) - (x_{i} - s_{0i})\right)^2\\
+&= \sum_i^p \left( \sum_j \alpha_j s'_{ji} - y_{i}\right)^2\\
+&= \sum_i \left( y_i^2 + \sum_j \alpha_j^2 s_{ji}^2 + 2\sum_{j\neq k} \alpha_j\alpha_k s_{ji}s_{ki} - 2\sum_j y_i \alpha_j s_{ji} \right)\\
+&=\sum_i y_i^2 + \sum_j \alpha_j^2\sum_i s^2_{ji} + 2 \sum_{j\neq k}\alpha_j\alpha_k \sum_i s_{ji} s_{ki} - 2 \sum_j \alpha_j \sum_i y_i s_{ji}\\
+&= \normsq{\MY} + \sum_j \alpha_j^2 \normsq{S_j} + 2 \sum_{j\neq k} \alpha_j \alpha_k S_j \cdot S_k - 2 \sum_j \alpha_j \MY \cdot S_j\\
+\frac{d\epsilon}{d\alpha_j} &=  2\alpha_j \normsq{S_j} + 2 \sum_{k\neq j} \alpha_k S_j \cdot S_k - 2 \MY \cdot S_j = 0\\
+\hat{\alpha_j} &= \frac{(\MY - \sum_{k\neq j} \alpha_k S_k) \cdot S_j}{\normsq{S_j}} \\
+\hat{\alpha_j} &= \frac{\MY \cdot S_j}{\normsq{S_j}} 
+\end{align}
+
+where the last line only holds when the $S_j$ are orthogonal, in which case 
+$$\hat{\MALPHA} = \MY \MS$$
+
+
+\subsubsection{Motivating a set of reference pops}
+Let us now assume that the $S_i$ are not directly known, but instead admixture happened earlier, such that  
+
+\begin{equation}
+X = \sum \alpha_j k_j S_j
+\end{equation}
+with the constraint that $\sum_j \alpha_j = 1$ and $0 \leq k_j \leq 1$ for all $j$. It seems clear from above considerations that the $\alpha_j$ and $k_j$ cannot be identified independently. Thus, we can motivate the introduction of a set of reference populations $\MR$ some reference populations that are in some way related to the populations, but are not directly admixture sources. In this scenario, let $S_i'$ be the projection of $S_i$ onto the reference matrix $\MP$, (tbd, remember how $\MP$ is derived)
+\begin{equation}
+S_i' = S_i \MP
+\end{equation}
+By definition, $\langle S_i - S_i', R_i\rangle = 0$ for all basis vectors in $R$. Furthermore, by the assumption,
+$$\langle S_i - S_i', S_j - S_j' \rangle = 0$$ for all suitable sources. Finally, the target population $X$ can be written as $X' + \Delta X$, where $\Delta X$ is, by definiton, orthogonal to $\MS$ and $\MR$, and thus
+\begin{equation}
+\langle X' - X, R_i - R_i' \rangle = 0
+\end{equation} (not sure if useful or trivial)
+
+\subsubsection{Defining a reference}
+This section is pure conjecture. Given a set of putative source populations $\MS$ and a larger set of populations $\MR$, can we create a suitable reference space (similar to the rotation idea in qpgraph). I.e. we can think of the $S_i - S_i'$ spanning an orthogonal space.
+
+\subsubsection{Closely correlated putative sources}
+Another issue might be that we have closely related sources. For example, when modelling African Americans we might conjecture that many West African and European pops would give very similar results. How can we find a ``better'' source set (e.g a linear combination of Africans) instead of a single pop source?
+
+
+\newpage
+%\bibliography{main}
+\printbibliography
+	
+\end{document}
